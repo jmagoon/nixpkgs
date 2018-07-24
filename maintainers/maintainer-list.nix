@@ -1880,6 +1880,11 @@
     github = "jluttine";
     name = "Jaakko Luttinen";
   };
+  jmagoon = {
+    email = "js.magoon@gmail.com";
+    github = "jmagoon";
+    name = "Jon Magoon";
+  };
   joachifm = {
     email = "joachifm@fastmail.fm";
     github = "joachifm";
