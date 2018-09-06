@@ -11003,6 +11003,8 @@ with pkgs;
 
   nanomsg = callPackage ../development/libraries/nanomsg { };
 
+  nativefiledialog = callPackage ../development/libraries/nativefiledialog { };
+
   ndpi = callPackage ../development/libraries/ndpi { };
 
   nifticlib = callPackage ../development/libraries/science/biology/nifticlib { };
