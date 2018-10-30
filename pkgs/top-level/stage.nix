@@ -56,7 +56,7 @@
 , # A list of overlays (Additional `self: super: { .. }` customization
   # functions) to be fixed together in the produced package set
   overlays
-}:
+} @args:
 
 let
   stdenvAdapters = self: super:
@@ -82,11 +82,8 @@ let
   platformCompat = self: super: let
     inherit (super.stdenv) buildPlatform hostPlatform targetPlatform;
   in {
-    stdenv = super.stdenv // {
-      inherit (super.stdenv.buildPlatform) platform;
-    };
     inherit buildPlatform hostPlatform targetPlatform;
-    inherit (buildPlatform) system platform;
+    inherit (hostPlatform) system;
   };
 
   splice = self: super: import ./splice.nix lib self (buildPackages != null);
@@ -97,8 +94,7 @@ let
       res self;
     in res;
 
-  aliases = self: super: if config.skipAliases or false then {}
-                         else import ./aliases.nix lib self super;
+  aliases = self: super: lib.optionalAttrs (config.allowAliases or true) (import ./aliases.nix lib self super);
 
   # stdenvOverrides is used to avoid having multiple of versions
   # of certain dependencies that were used in bootstrapping the
@@ -117,29 +113,65 @@ let
     lib.optionalAttrs allowCustomOverrides
       ((config.packageOverrides or (super: {})) super);
 
-  # Override system. This is useful to build i686 packages on x86_64-linux.
-  forceSystem = system: kernel: nixpkgsFun {
-    localSystem = {
-      inherit system;
-      platform = stdenv.hostPlatform.platform // { kernelArch = kernel; };
-    };
-  };
-
-  # Convenience attributes for instantitating nixpkgs. Each of these
-  # will instantiate a new version of allPackages. They map example
-  # attributes to their own thing.
-  extraPkgs = self: super: {
-     pkgsCross = lib.mapAttrs (n: crossSystem:
+  # Convenience attributes for instantitating package sets. Each of
+  # these will instantiate a new version of allPackages. Currently the
+  # following package sets are provided:
+  #
+  # - pkgsCross.<system> where system is a member of lib.systems.examples
+  # - pkgsMusl
+  # - pkgsi686Linux
+  otherPackageSets = self: super: {
+    # This maps each entry in lib.systems.examples to its own package
+    # set. Each of these will contain all packages cross compiled for
+    # that target system. For instance, pkgsCross.rasberryPi.hello,
+    # will refer to the "hello" package built for the ARM6-based
+    # Raspberry Pi.
+    pkgsCross = lib.mapAttrs (n: crossSystem:
                               nixpkgsFun { inherit crossSystem; })
                               lib.systems.examples;
-     pkgsLocal = lib.mapAttrs (n: localSystem:
-                              nixpkgsFun { inherit localSystem; })
-                              lib.systems.examples;
 
-     # Used by wine, firefox with debugging version of Flash, ...
-     pkgsi686Linux = forceSystem "i686-linux" "i386";
-     callPackage_i686 = self.pkgsi686Linux.callPackage;
-     inherit forceSystem;
+    # All packages built with the Musl libc. This will override the
+    # default GNU libc on Linux systems. Non-Linux systems are not
+    # supported.
+    pkgsMusl = if stdenv.hostPlatform.isLinux then nixpkgsFun {
+      inherit overlays config;
+      ${if stdenv.hostPlatform == stdenv.buildPlatform
+        then "localSystem" else "crossSystem"} = {
+        parsed = stdenv.hostPlatform.parsed // {
+          abi = {
+            "gnu" = lib.systems.parse.abis.musl;
+            "gnueabi" = lib.systems.parse.abis.musleabi;
+            "gnueabihf" = lib.systems.parse.abis.musleabihf;
+          }.${stdenv.hostPlatform.parsed.abi.name}
+            or lib.systems.parse.abis.musl;
+        };
+      };
+    } else throw "Musl libc only supports Linux systems.";
+
+    # All packages built for i686 Linux.
+    # Used by wine, firefox with debugging version of Flash, ...
+    pkgsi686Linux = assert stdenv.hostPlatform.isLinux; nixpkgsFun {
+      inherit overlays config;
+      ${if stdenv.hostPlatform == stdenv.buildPlatform
+        then "localSystem" else "crossSystem"} = {
+        parsed = stdenv.hostPlatform.parsed // {
+          cpu = lib.systems.parse.cpuTypes.i686;
+        };
+      };
+    };
+
+    # Extend the package set with zero or more overlays. This preserves
+    # preexisting overlays. Prefer to initialize with the right overlays
+    # in one go when calling Nixpkgs, for performance and simplicity.
+    appendOverlays = extraOverlays:
+      import ./stage.nix (args // { overlays = args.overlays ++ extraOverlays; });
+
+    # Extend the package set with a single overlay. This preserves
+    # preexisting overlays. Prefer to initialize with the right overlays
+    # in one go when calling Nixpkgs, for performance and simplicity.
+    # Prefer appendOverlays if used repeatedly.
+    extend = f: self.appendOverlays [f];
+
   };
 
   # The complete chain of package set builders, applied from top to bottom.
@@ -152,7 +184,7 @@ let
     trivialBuilders
     splice
     allPackages
-    extraPkgs
+    otherPackageSets
     aliases
     configOverrides
   ] ++ overlays ++ [

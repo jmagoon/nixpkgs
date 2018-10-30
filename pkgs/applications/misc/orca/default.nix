@@ -1,24 +1,23 @@
-{ stdenv, lib, pkgconfig, fetchurl, buildPythonApplication
+{ stdenv, pkgconfig, fetchurl, buildPythonApplication
 , autoreconfHook, wrapGAppsHook, gobjectIntrospection
 , intltool, yelp-tools, itstool, libxmlxx3
 , python, pygobject3, gtk3, gnome3, substituteAll
 , at-spi2-atk, at-spi2-core, pyatspi, dbus, dbus-python, pyxdg
-, xkbcomp, gsettings-desktop-schemas, liblouis
+, xkbcomp, gsettings-desktop-schemas
 , speechd, brltty, setproctitle, gst_all_1, gst-python
 }:
 
-with lib;
 let
   pname = "orca";
-  version = "3.28.1";
+  version = "3.28.2";
 in buildPythonApplication rec {
   name = "${pname}-${version}";
 
   format = "other";
 
   src = fetchurl {
-    url = "mirror://gnome/sources/${pname}/${gnome3.versionBranch version}/${name}.tar.xz";
-    sha256 = "04l5ccn7wf175gyq3blfpx0yh70ny06n161297jwc9idf951852g";
+    url = "mirror://gnome/sources/${pname}/${stdenv.lib.versions.majorMinor version}/${name}.tar.xz";
+    sha256 = "08rh6ji680g5nrw2n7jrxrw7nwg04sj52jxffcfasgss2f51d38q";
   };
 
   patches = [
@@ -54,7 +53,7 @@ in buildPythonApplication rec {
     };
   };
 
-  meta = {
+  meta = with stdenv.lib; {
     homepage = https://wiki.gnome.org/Projects/Orca;
     description = "Screen reader";
     longDescription = ''

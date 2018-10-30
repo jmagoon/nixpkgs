@@ -1,6 +1,6 @@
-{ stdenv, fetchurl, buildFHSUserEnv, writeTextFile, alsaLib, atk, cairo, cups
+{ stdenv, fetchurl, alsaLib, atk, cairo, cups
 , dbus, expat, fontconfig, freetype, gcc, gdk_pixbuf, glib, gnome2, gtk3
-, libnotify, nspr, nss, pango, systemd, xorg, utillinuxMinimal }:
+, libnotify, nspr, nss, pango, systemd, xorg }:
 
 let
   libPath = stdenv.lib.makeLibraryPath [
@@ -38,10 +38,10 @@ let
 in
 stdenv.mkDerivation rec {
   name = "keybase-gui-${version}";
-  version = "2.3.0-20180627160031.8e0438e6fb";
+  version = "2.7.0-20180926133747.0d62c866fc";
   src = fetchurl {
     url = "https://s3.amazonaws.com/prerelease.keybase.io/linux_binaries/deb/keybase_${version}_amd64.deb";
-    sha256 = "0xaxxjdfdmgv0wfy75dspfa0a7cdwdpphyy6my9vw82v8jxl3ffx";
+    sha256 = "0a0ax3skfw398vcjl7822qp7160lbll1snwdqsa13dy8qrjl1byp";
   };
   phases = ["unpackPhase" "installPhase" "fixupPhase"];
   unpackPhase = ''
@@ -70,10 +70,9 @@ stdenv.mkDerivation rec {
       checkFailed
     fi
 
-    ${utillinuxMinimal}/bin/mountpoint /keybase &>/dev/null
-    if [ "\$?" -ne "0" ]; then
-      echo "Keybase is not mounted to /keybase." >&2
-      echo "You might need to run: kbfsfuse /keybase" >&2
+    if [ -z "\$(keybase status | grep kbfsfuse)" ]; then
+      echo "Could not find kbfsfuse client in keybase status." >&2
+      echo "You might need to run: kbfsfuse" >&2
       checkFailed
     fi
 
@@ -93,5 +92,6 @@ stdenv.mkDerivation rec {
     description = "The Keybase official GUI.";
     platforms = platforms.linux;
     maintainers = with maintainers; [ puffnfresh np ];
+    license = licenses.bsd3;
   };
 }

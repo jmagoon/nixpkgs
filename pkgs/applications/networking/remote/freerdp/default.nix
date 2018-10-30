@@ -14,13 +14,13 @@
 
 stdenv.mkDerivation rec {
   name = "freerdp-${version}";
-  version = "2.0.0-rc2";
+  version = "2.0.0-rc3";
 
   src = fetchFromGitHub {
     owner  = "FreeRDP";
     repo   = "FreeRDP";
     rev    = version;
-    sha256 = "01cm9g4xqihnnc5d2w1zs8gabkv59p7fyjwi1cwpzv6s198xwbfs";
+    sha256 = "0lpn6klwfnw69imgiibn3mff7lzli2idphgvw5lnradbfw4pr9qc";
   };
 
   # outputs = [ "bin" "out" "dev" ];
@@ -31,7 +31,7 @@ stdenv.mkDerivation rec {
       --replace "Requires:" "Requires: @WINPR_PKG_CONFIG_FILENAME@"
   '' + lib.optionalString (pcsclite != null) ''
     substituteInPlace "winpr/libwinpr/smartcard/smartcard_pcsc.c" \
-      --replace "libpcsclite.so" "${pcsclite}/lib/libpcsclite.so"
+      --replace "libpcsclite.so" "${stdenv.lib.getLib pcsclite}/lib/libpcsclite.so"
   '';
 
   buildInputs = with lib; [

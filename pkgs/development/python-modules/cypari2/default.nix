@@ -7,16 +7,16 @@
 , gmp
 , cython
 , cysignals
-, six
 }:
 
 buildPythonPackage rec {
   pname = "cypari2";
-  version = "1.1.4"; # remove six dependency on upgrade to >1.1.4
+  # upgrade may break sage, please test the sage build or ping @timokau on upgrade
+  version = "1.3.1";
 
   src = fetchPypi {
     inherit pname version;
-    sha256 = "0n0mp8qmvvzmfaawg39d3mkyzf65q2zkz7bnqyk4sfjbz4xwc6mb";
+    sha256 = "04f00xp8aaz37v00iqg1mv5wjq00a5qhk8cqa93s13009s9x984r";
   };
 
   # This differs slightly from the default python installPhase in that it pip-installs
@@ -39,7 +39,6 @@ buildPythonPackage rec {
   propagatedBuildInputs = [
     cysignals
     cython
-    six # after 1.1.4: will not be needed
   ];
 
   checkPhase = ''

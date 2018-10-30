@@ -1,4 +1,5 @@
 { stdenv
+, lib
 , fetchurl
 , unzip
 , makeDesktopItem
@@ -16,15 +17,15 @@ let
   };
 in
 stdenv.mkDerivation rec {
-  version = "${baseVersion}.${patchVersion}";
-  baseVersion = "14.29";
-  patchVersion = "12";
+  version = "14.29.26";
   pname = "jmol";
   name = "${pname}-${version}";
 
-  src = fetchurl {
+  src = let 
+    baseVersion = "${lib.versions.major version}.${lib.versions.minor version}";
+  in fetchurl {
     url = "mirror://sourceforge/jmol/Jmol/Version%20${baseVersion}/Jmol%20${version}/Jmol-${version}-binary.tar.gz";
-    sha256 = "1ndq9am75janshrnk26334z1nmyh3k4bp20napvf2zv0lfp8k3bv";
+    sha256 = "0a728lwqbbnm5v2spi5rbqy3xldbcf2gcsf48rkq3p43laps3630";
   };
 
   patchPhase = ''

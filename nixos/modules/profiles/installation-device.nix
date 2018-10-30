@@ -22,16 +22,18 @@ with lib;
   config = {
 
     # Enable in installer, even if the minimal profile disables it.
-    services.nixosManual.enable = mkForce true;
+    documentation.enable = mkForce true;
 
     # Show the manual.
+    documentation.nixos.enable = mkForce true;
     services.nixosManual.showManual = true;
 
     # Let the user play Rogue on TTY 8 during the installation.
     #services.rogue.enable = true;
 
     # Disable some other stuff we don't need.
-    security.sudo.enable = false;
+    security.sudo.enable = mkDefault false;
+    services.udisks2.enable = mkDefault false;
 
     # Automatically log in at the virtual consoles.
     services.mingetty.autologinUser = "root";
@@ -85,6 +87,7 @@ with lib;
     # console less cumbersome if the machine has a public IP.
     networking.firewall.logRefusedConnections = mkDefault false;
 
-    environment.systemPackages = [ pkgs.vim ];
+    # Allow the user to log in as root without a password.
+    users.users.root.initialHashedPassword = "";
   };
 }

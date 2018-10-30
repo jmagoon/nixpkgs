@@ -2,6 +2,7 @@
 , removeReferencesTo, fetchFromGitHub }:
 
 { name, buildInputs ? [], nativeBuildInputs ? [], passthru ? {}, preFixup ? ""
+, shellHook ? ""
 
 # We want parallel builds by default
 , enableParallelBuilding ? true
@@ -102,6 +103,7 @@ go.stdenv.mkDerivation (
 
   '') + ''
     export GOPATH=$NIX_BUILD_TOP/go:$GOPATH
+    export GOCACHE=$TMPDIR/go-cache
 
     runHook postConfigure
   '';
@@ -151,6 +153,10 @@ go.stdenv.mkDerivation (
       fi
     }
 
+    if (( "''${NIX_DEBUG:-0}" >= 1 )); then
+      buildFlagsArray+=(-x)
+    fi
+
     if [ ''${#buildFlagsArray[@]} -ne 0 ]; then
       declare -p buildFlagsArray > $TMPDIR/buildFlagsArray
     else
@@ -165,6 +171,7 @@ go.stdenv.mkDerivation (
     runHook postBuild
   '';
 
+  doCheck = args.doCheck or false;
   checkPhase = args.checkPhase or ''
     runHook preCheck
 
@@ -175,15 +182,6 @@ go.stdenv.mkDerivation (
 
   installPhase = args.installPhase or ''
     runHook preInstall
-
-    mkdir -p $out
-    pushd "$NIX_BUILD_TOP/go"
-    while read f; do
-      echo "$f" | grep -q '^./\(src\|pkg/[^/]*\)/${goPackagePath}' || continue
-      mkdir -p "$(dirname "$out/share/go/$f")"
-      cp "$NIX_BUILD_TOP/go/$f" "$out/share/go/$f"
-    done < <(find . -type f)
-    popd
 
     mkdir -p $bin
     dir="$NIX_BUILD_TOP/go/bin"
@@ -196,9 +194,6 @@ go.stdenv.mkDerivation (
     find $bin/bin -type f -exec ${removeExpr removeReferences} '{}' + || true
   '';
 
-  # Disable go cache, which is not reused in nix anyway
-  GOCACHE = "off";
-
   shellHook = ''
     d=$(mktemp -d "--suffix=-$name")
   '' + toString (map (dep: ''
@@ -207,7 +202,7 @@ go.stdenv.mkDerivation (
   ''
   ) goPath) + ''
     export GOPATH=${lib.concatStringsSep ":" ( ["$d"] ++ ["$GOPATH"] ++ ["$PWD"] ++ extraSrcPaths)}
-  '';
+  '' + shellHook;
 
   disallowedReferences = lib.optional (!allowGoReference) go
     ++ lib.optional (!dontRenameImports) govers;
