@@ -8898,6 +8898,8 @@ with pkgs;
 
   cppcms = callPackage ../development/libraries/cppcms { };
 
+  cpprestsdk = callPackage ../development/libraries/cpprestsdk { };
+
   cppunit = callPackage ../development/libraries/cppunit { };
 
   cpputest = callPackage ../development/libraries/cpputest { };
