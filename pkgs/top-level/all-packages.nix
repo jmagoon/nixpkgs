@@ -9304,15 +9304,11 @@ in
 
   armadillo = callPackage ../development/libraries/armadillo {};
 
-<<<<<<< HEAD
   arrayfire = callPackage ../development/libraries/arrayfire {};
 
-  arrow-cpp = callPackage ../development/libraries/arrow-cpp {};
-=======
   arrow-cpp = callPackage ../development/libraries/arrow-cpp {
     gtest = gtest.override { static = true; };
   };
->>>>>>> 94a8a9b812db6081d1cf1231127646b52671e133
 
   assimp = callPackage ../development/libraries/assimp { };
 
